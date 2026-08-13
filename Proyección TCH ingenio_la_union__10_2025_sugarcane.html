@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>REPORTE DE ANÁLISIS DE TCH</title>
+<style>
+:root {
+    --ink: #14171f;
+    --ink-soft: #34404f;
+    --muted: #6a7080;
+    --faint: #8a94a3;
+    --line: #e3e7ee;
+    --grid: #e7e9f0;
+    --surface: #ffffff;
+    --near-black: #14161c;
+
+    --brand: #16a34a;          /* NAX green - primary */
+    --brand-strong: #15803d;   /* green for large text / lines */
+    --brand-ink: #166534;      /* green for small labels (contrast) */
+    --brand-bright: #22c55e;   /* green on dark surfaces */
+    --brand-soft: #dcf3e4;     /* light green fill */
+    --brand-tint: #eaf6ef;     /* subtle green background */
+    --brand-line: #b8ddc7;     /* green-tinted borders */
+    --brand-band: rgba(22, 163, 74, 0.14);
+    --brand-band-sw: rgba(22, 163, 74, 0.30);
+
+    --violet: #7c3aed;         /* model / prediction - secondary */
+    --model: #3b5bdb;          /* model / prediction line - blue */
+    --model-band: rgba(59, 91, 219, 0.14);   /* P25-P75 band: light model blue */
+    --model-band-sw: rgba(59, 91, 219, 0.30); /* its legend swatch */
+
+    --amber: #d97706;          /* client estimate */
+    --teal: #0d9488;           /* legacy (unused) */
+    --bias-pos: #db2777;       /* bias + (sobreestima): rosa */
+    --bias-neg: #7e22ce;       /* bias - (subestima): ciruela */
+
+    /* Report chrome (portada, índice, tablas): model-blue derivations.
+       Charts and the green .tile-used cards keep the --brand tokens. */
+    --ui: #3b5bdb;             /* primary chrome accent (= model blue) */
+    --ui-strong: #2b41b5;      /* large chrome text / accents */
+    --ui-ink: #1e3a8a;         /* small chrome labels (contrast on light) */
+    --ui-tint: #eef2fc;        /* light chrome fill (table headers, hovers) */
+    --ui-soft: #dde5fb;        /* highlighted table row */
+    --ui-line: #c2d0f5;        /* chrome borders / separators */
+
+    --vol: #c7cbd6;
+}
+body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.25rem 2rem 3rem;
+    color: var(--ink);
+    line-height: 1.62;
+}
+header {
+    border-bottom: 3px solid var(--ui);
+    margin-bottom: 2.25rem;
+    padding-bottom: 1rem;
+}
+header .brand {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--ui-strong);
+    margin: 0 0 0.35rem;
+}
+header h1 {
+    font-size: 1.7rem;
+    line-height: 1.15;
+    margin: 0 0 0.4rem;
+    text-wrap: balance;
+}
+header .meta {
+    margin: 0;
+}
+header .meta-primary {
+    margin: 0 0 0.15rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+header .meta-primary .sep {
+    color: var(--ui-line);
+    font-weight: 400;
+    padding: 0 0.2rem;
+}
+header .meta-secondary {
+    margin: 0;
+    color: var(--faint);
+    font-size: 0.82rem;
+}
+header .meta .num {
+    font-variant-numeric: tabular-nums;
+}
+nav {
+    margin-bottom: 2.75rem;
+}
+nav h2 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 0.5rem;
+}
+nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+nav a {
+    color: var(--ink-soft);
+    text-decoration: none;
+}
+nav a:focus-visible {
+    outline: 2px solid var(--ui);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+.idx-group {
+    margin-top: 1.5rem;
+}
+.idx-group:first-of-type {
+    margin-top: 0.7rem;
+}
+.idx-head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0 0 0.7rem;
+}
+.idx-num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--ui-strong);
+}
+.idx-gtitle {
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--ui-ink);
+    white-space: nowrap;
+}
+.idx-head:hover .idx-gtitle {
+    color: var(--ui-strong);
+}
+.idx-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--ui-line);
+}
+.idx-subs {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 0.2rem;
+}
+.idx-subs li > a {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    padding: 0.33rem 0.5rem;
+    border-radius: 8px;
+    transition: background 0.14s;
+}
+.idx-subs li > a:hover {
+    background: var(--ui-tint);
+}
+.idx-snum {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--ui-ink);
+    font-size: 0.85rem;
+    min-width: 1.9rem;
+}
+.idx-stitle {
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+}
+.idx-subs li > a:hover .idx-stitle {
+    color: var(--ink);
+}
+section {
+    margin-bottom: 2.25rem;
+}
+section h2 {
+    font-size: 1.4rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.55rem;
+    text-wrap: balance;
+}
+section h3 {
+    font-size: 1.06rem;
+    letter-spacing: -0.005em;
+    margin: 0 0 0.6rem;
+}
+.sec-num {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    margin-right: 0.5rem;
+}
+.subsection {
+    border: 1px solid #e6e9f0;
+    border-radius: 14px;
+    padding: 1.6rem 1.75rem 1.5rem;
+    margin-bottom: 2rem;
+}
+.subsection h3 {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.7rem;
+    margin-bottom: 0.95rem;
+}
+.subsection > :last-child {
+    margin-bottom: 0;
+}
+.subsection .age-chart-wrap:first-of-type {
+    margin-top: 0.75rem;
+}
+p {
+    margin: 0 0 1.05rem;
+}
+section > p {
+    text-align: justify;
+    hyphens: auto;
+}
+section:not(.subsection) > p {
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+    margin-bottom: 1.5rem;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.25rem 0;
+}
+th, td {
+    border: 1px solid var(--line);
+    padding: 0.5rem 0.75rem;
+    text-align: right;
+}
+th {
+    background: var(--ui-tint);
+    color: var(--ui-ink);
+    font-weight: 700;
+}
+td:first-child, th:first-child {
+    text-align: left;
+}
+.total-row td {
+    border-top: 2px solid var(--ui-line);
+    background: var(--ui-tint);
+    font-weight: 700;
+}
+.row-hl td {
+    background: var(--ui-soft);
+    font-weight: 700;
+}
+.ed-table th:last-child, .ed-table td:last-child {
+    background: var(--ui-tint);
+    font-weight: 700;
+    border-left: 2px solid var(--ui-line);
+}
+.table-scroll {
+    overflow-x: auto;
+}
+table { font-size: 0.82rem; }
+th, td { padding: 0.34rem 0.45rem; }
+td { font-variant-numeric: tabular-nums; }
+table.ce-err th, table.ce-err td { white-space: nowrap; }
+.reason {
+    font-size: 0.82rem;
+    color: var(--faint);
+}
+.tiles {
+    display: flex;
+    gap: 1rem;
+    margin: 1.25rem 0;
+    flex-wrap: wrap;
+}
+.tile {
+    flex: 1 1 200px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+}
+.tile-used {
+    border-color: var(--brand-line);
+    background: var(--brand-tint);
+}
+.tile-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+}
+.tile-value {
+    font-size: 1.7rem;
+    font-weight: 800;
+    margin: 0.3rem 0 0;
+}
+.tile-unit {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+.tile-secondary {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+.tile-used .tile-value {
+    color: var(--brand-strong);
+}
+.date-chart {
+    margin: 1.25rem 0;
+}
+.date-bar-block {
+    margin-bottom: 1.1rem;
+}
+.date-bar-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.35rem;
+    color: var(--ink-soft);
+}
+.date-bar {
+    display: flex;
+    height: 30px;
+    border-radius: 7px;
+    overflow: hidden;
+}
+.date-bar .seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #14311f;
+    min-width: 2px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.seg-real { background: #9bd9b4; }
+.seg-est { background: #f3e2a0; }
+.seg-sim { background: #f6c79b; }
+.date-legend {
+    display: flex;
+    gap: 1.3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 0.7rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+.date-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.date-legend .sw {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 3px;
+    display: inline-block;
+}
+.sw-real { background: #9bd9b4; }
+.sw-est { background: #f3e2a0; }
+.sw-sim { background: #f6c79b; }
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 1.25rem 0;
+}
+.kpi-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 150px;
+    background: var(--surface);
+    border: 1px solid #e5e8ef;
+    border-radius: 16px;
+    padding: 20px 18px;
+}
+.kpi-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.kpi-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.56rem;
+    font-weight: 700;
+    color: var(--faint);
+    line-height: 1.2;
+    margin: 0;
+}
+.kpi-qual {
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #49515f;
+    line-height: 1.25;
+    margin: 0;
+}
+.kpi-num {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-size: 2.4rem;
+    color: var(--model);
+    margin: 0.7rem 0 0;
+}
+.kpi-unit {
+    font-weight: 600;
+    font-size: 0.46em;
+    color: var(--muted);
+    margin-left: 2px;
+}
+.kpi-foot {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 0.7rem;
+}
+.kpi-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin: 0;
+}
+.kpi-range {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+}
+.kpi-card--hl {
+    background: var(--near-black);
+    border-color: var(--near-black);
+}
+.kpi-card--hl .kpi-eyebrow { color: #93c5fd; }
+.kpi-card--hl .kpi-qual { color: #dbeafe; }
+.kpi-card--hl .kpi-num { color: var(--model); }
+.kpi-card--hl .kpi-unit { color: #b9c4bd; }
+.kpi-card--hl .kpi-sub,
+.kpi-card--hl .kpi-range { color: #b9c4bd; }
+.kpi-note {
+    font-size: 0.72rem;
+    line-height: 1.3;
+    color: var(--ink-soft);
+    margin: 2px 0 0;
+}
+.kpi-card--hl .kpi-note { color: #b9c4bd; }
+.kpi-coverage-note {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-top: 16px;
+    background: var(--ui-tint);
+    border: 1px solid var(--ui-line);
+    border-left: 4px solid var(--ui);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--ink-soft);
+}
+.kpi-coverage-note .ic {
+    color: var(--ui-strong);
+    font-weight: 800;
+    font-size: 1rem;
+    line-height: 1.2;
+    flex: none;
+}
+.kpi-coverage-note .cn-title {
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 4px;
+}
+.kpi-coverage-note p {
+    margin: 0 0 6px;
+}
+.kpi-coverage-note ul { margin: 0; padding-left: 1.1em; }
+.kpi-coverage-note li { margin: 2px 0; }
+.kpi-coverage-note b { color: var(--ink); }
+@media (max-width: 760px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 440px) {
+    .kpis { grid-template-columns: 1fr; }
+}
+.age-chart-wrap {
+    margin: 1.5rem 0;
+}
+.ed-chart {
+    margin-top: 2rem;
+}
+.age-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+.ac-band { fill: var(--model-band); stroke: none; }
+.ac-mae-line {
+    fill: none;
+    stroke: var(--model);
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+}
+.ac-mae-dot { fill: var(--model); }
+.ac-me-pos { fill: var(--bias-pos); }
+.ac-me-neg { fill: var(--bias-neg); }
+.ac-grid { stroke: var(--grid); stroke-width: 1; }
+.ac-zero { stroke: #9aa1b0; stroke-width: 1.4; stroke-dasharray: 4 3; }
+.ac-ytick, .ac-xtick { fill: var(--muted); font-size: 11px; }
+.ac-axis-title { fill: var(--muted); font-size: 11px; }
+.ac-dlabel { fill: var(--model); font-size: 10px; font-weight: 700; }
+.ac-vol { fill: var(--vol); }
+.ac-vol-lbl { fill: var(--muted); font-size: 9px; }
+.ac-vol-pct { fill: #49515f; font-size: 9px; font-weight: 700; }
+.age-chart circle:hover { r: 5; }
+.age-chart rect:hover { opacity: 0.8; }
+.ac-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 0.7rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+.ac-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.ac-sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+.ac-sw-mae { background: var(--model); height: 3px; }
+.ac-sw-band { background: var(--model-band-sw); }
+.ac-sw-pos { background: var(--bias-pos); }
+.ac-sw-neg { background: var(--bias-neg); }
+.ac-sw-vol { background: var(--vol); }
+.ac-pred-line {
+    fill: none;
+    stroke: var(--model);
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+}
+.ac-real-line {
+    fill: none;
+    stroke: var(--brand);
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+}
+.ac-pred-dot { fill: var(--model); stroke: #ffffff; stroke-width: 1.4; }
+.ac-real-dot { fill: var(--brand); stroke: #ffffff; stroke-width: 1.4; }
+.ac-pred-lbl { fill: var(--model); font-size: 10px; font-weight: 700; }
+.ac-real-lbl { fill: var(--brand-strong); font-size: 10px; font-weight: 700; }
+.ac-sw-pred { background: var(--model); }
+.ac-sw-real { background: var(--brand); }
+.ac-client-line {
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+}
+.ac-client-dot { fill: var(--amber); stroke: #ffffff; stroke-width: 1.4; }
+.ac-client-lbl { fill: var(--amber); font-size: 10px; font-weight: 700; }
+.ac-sw-client { background: var(--amber); }
+</style>
+</head>
+<body>
+<header><p class="brand">Nax Solutions</p><h1>REPORTE DE ANÁLISIS DE TCH</h1><div class="meta"><p class="meta-primary">La Union<span class="sep">·</span>Ingenio La Union<span class="sep">·</span>Campaña 2025</p><p class="meta-secondary">Fecha del reporte <span class="num">2026-07-31</span></p></div></header>
+<nav><h2>Índice</h2>
+<div class="idx-group"><a class="idx-head" href="#section-0"><span class="idx-num">1</span><span class="idx-gtitle">Preparación de los datos</span><span class="idx-rule"></span></a><ul class="idx-subs"><li><a href="#section-1"><span class="idx-snum">1.1</span><span class="idx-stitle">Área descartada</span></a></li><li><a href="#section-2"><span class="idx-snum">1.2</span><span class="idx-stitle">Origen de la fecha de cosecha</span></a></li></ul></div><div class="idx-group"><a class="idx-head" href="#section-3"><span class="idx-num">2</span><span class="idx-gtitle">Evaluación del modelo</span><span class="idx-rule"></span></a><ul class="idx-subs"><li><a href="#section-4"><span class="idx-snum">2.1</span><span class="idx-stitle">Indicadores clave (KPIs)</span></a></li><li><a href="#section-5"><span class="idx-snum">2.2</span><span class="idx-stitle">Porcentaje de error por edad de la caña</span></a></li><li><a href="#section-6"><span class="idx-snum">2.3</span><span class="idx-stitle">Comparativa de TCH por mes de cosecha</span></a></li><li><a href="#section-7"><span class="idx-snum">2.4</span><span class="idx-stitle">Distribución del área por rango de error</span></a></li><li><a href="#section-8"><span class="idx-snum">2.5</span><span class="idx-stitle">Error del modelo en los lotes con fecha de cosecha bien estimada</span></a></li></ul></div>
+</nav>
+<section id="section-0">
+<h2><span class="sec-num">1</span>Preparación de los datos</h2>
+<p>En esta sección se resume la preparación de los datos recibidos antes de evaluar el modelo: qué área se descarta por no tener aún un TCH real o por tenerlo fuera de rango, y cómo se ha determinado la fecha de cosecha de cada lote cuando no constaba una fecha real.</p>
+</section>
+<section id="section-1" class="subsection">
+<h3><span class="sec-num">1.1</span>Área descartada</h3>
+<p>De los datos recibidos se descarta el área sin TCH real y la que lo presenta fuera del rango válido. Las tarjetas y la tabla resumen cuánta área se conserva y cuánta se descarta por cada motivo.</p><div class="tiles"><div class="tile"><div class="tile-label">Área total</div><p class="tile-value">24.909 <span class="tile-unit">ha</span> <span class="reason">(100,0%)</span></p></div><div class="tile tile-used"><div class="tile-label">Área usada en el informe</div><p class="tile-value">24.442 <span class="tile-unit">ha</span> <span class="reason">(98,1%)</span></p></div></div><table><thead><tr><th>Motivo del descarte</th><th>Hectáreas</th></tr></thead><tbody><tr><td>Sin TCH real</td><td>440 <span class="reason">(1,8%)</span></td></tr><tr><td>TCH bajo anómalo <span class="reason">(≤ 20)</span></td><td>0 <span class="reason">(0,0%)</span></td></tr><tr><td>TCH alto anómalo <span class="reason">(≥ 250)</span></td><td>27 <span class="reason">(0,1%)</span></td></tr><tr class="total-row"><td>Total descartado</td><td>467 <span class="reason">(1,9%)</span></td></tr></tbody></table>
+</section>
+<section id="section-2" class="subsection">
+<h3><span class="sec-num">1.2</span>Origen de la fecha de cosecha</h3>
+<p>La gráfica reparte el área usada en el informe según el origen de la fecha de cosecha: <strong>real</strong> cuando consta la fecha en que se cosechó el lote, <strong>estimada</strong> cuando solo hay una fecha prevista, y <strong>simulada</strong> cuando no hay ninguna y se calcula a partir de la fecha de inicio del cultivo (14 meses cuando la soca es 0 y 12 meses en el resto de casos). Cuanta más área con fecha real, más fiable es el análisis posterior por mes de cosecha.</p><div class="date-chart"><div class="date-bar-block"><div class="date-bar-title">Hectáreas · 24.442 ha</div><div class="date-bar"><div class="seg seg-real" style="width:100.0000%">Real 100%</div></div></div><div class="date-legend"><span><i class="sw sw-real"></i> Real: 24.442 ha (100,0%)</span></div></div>
+</section>
+<section id="section-3">
+<h2><span class="sec-num">2</span>Evaluación del modelo</h2>
+<p>En esta sección se evalúan las estimaciones del modelo frente al TCH real cosechado, mediante indicadores de precisión y gráficas por edad del cultivo y por mes de cosecha.</p>
+</section>
+<section id="section-4" class="subsection">
+<h3><span class="sec-num">2.1</span>Indicadores clave (KPIs)</h3>
+<p>Estos indicadores resumen la precisión del modelo sobre los lotes usados en el informe: el error global del área en distintos momentos antes de la zafra, el error medio por lote y el porcentaje de lotes dentro del umbral de error. El error global lleva signo: negativo cuando el modelo subestima el TCH (predice por debajo de lo cosechado) y positivo cuando lo sobreestima.</p><div class="kpis"><article class="kpi-card"><div class="kpi-head"><p class="kpi-eyebrow">Error global</p><p class="kpi-qual">3 meses antes de zafra</p></div><p class="kpi-num">−2,5<span class="kpi-unit">%</span></p><div class="kpi-foot"><p class="kpi-note">Optimización financiera.</p></div></article><article class="kpi-card kpi-card--hl"><div class="kpi-head"><p class="kpi-eyebrow">Error global</p><p class="kpi-qual">1 mes antes de zafra</p></div><p class="kpi-num">−1,5<span class="kpi-unit">%</span></p><div class="kpi-foot"><p class="kpi-note">Ajustar logística y plan de cosecha en la antesala.</p></div></article><article class="kpi-card"><div class="kpi-head"><p class="kpi-eyebrow">Error por lote</p><p class="kpi-qual">9 meses de edad</p></div><p class="kpi-num">12,4<span class="kpi-unit">%</span></p><div class="kpi-foot"><p class="kpi-range">Rango P25–P75: 4,4% – 17,1%</p><p class="kpi-note">Planificación a nivel de polígono detallada.</p></div></article><article class="kpi-card"><div class="kpi-head"><p class="kpi-eyebrow">Lotes con error &lt; 10%</p><p class="kpi-qual">9 meses de edad</p></div><p class="kpi-num">51,4<span class="kpi-unit">%</span></p><div class="kpi-foot"><p class="kpi-note">Predicción operativa a 9 meses vista.</p></div></article></div><div class="kpi-coverage-note"><span class="ic">ⓘ</span><div><p class="cn-title">Cobertura de los indicadores</p><p>Cada indicador necesita que el lote tenga una predicción en un momento concreto (una edad del cultivo, o una antelación a la zafra). Los lotes que no la tienen quedan fuera, así que estos indicadores no se calculan sobre toda el área, sino sobre el porcentaje que se indica:</p><ul><li><b>Error por lote y lotes con error &lt; 10% · 9 meses de edad:</b> 98,5%</li></ul></div></div>
+</section>
+<section id="section-5" class="subsection">
+<h3><span class="sec-num">2.2</span>Porcentaje de error por edad de la caña</h3>
+<p>La gráfica muestra cómo evoluciona la precisión del modelo con la edad del cultivo, sobre un mismo eje de porcentaje: el <strong>error medio por lote</strong> (línea) tiende a bajar a medida que madura la caña, y el <strong>sesgo</strong> (barras en torno a 0) indica si el modelo sobreestima o subestima. La franja inferior muestra las hectáreas que respaldan cada edad; cuantas menos, menos fiable es ese punto.</p><div class="age-chart-wrap"><svg viewBox="0 0 760 386" class="age-chart" role="img" aria-label="Convergencia (MAE) y sesgo (ME) por edad, con hectáreas"><line class="ac-grid" x1="52" y1="218.0" x2="744" y2="218.0"/><text class="ac-ytick" x="44" y="221.0" text-anchor="end">-10</text><line class="ac-grid" x1="52" y1="190.0" x2="744" y2="190.0"/><text class="ac-ytick" x="44" y="193.0" text-anchor="end">-5</text><line class="ac-zero" x1="52" y1="162.0" x2="744" y2="162.0"/><text class="ac-ytick" x="44" y="165.0" text-anchor="end">0</text><line class="ac-grid" x1="52" y1="134.0" x2="744" y2="134.0"/><text class="ac-ytick" x="44" y="137.0" text-anchor="end">5</text><line class="ac-grid" x1="52" y1="106.0" x2="744" y2="106.0"/><text class="ac-ytick" x="44" y="109.0" text-anchor="end">10</text><line class="ac-grid" x1="52" y1="78.0" x2="744" y2="78.0"/><text class="ac-ytick" x="44" y="81.0" text-anchor="end">15</text><line class="ac-grid" x1="52" y1="50.0" x2="744" y2="50.0"/><text class="ac-ytick" x="44" y="53.0" text-anchor="end">20</text><line class="ac-grid" x1="52" y1="22.0" x2="744" y2="22.0"/><text class="ac-ytick" x="44" y="25.0" text-anchor="end">25</text><polygon class="ac-band" points="72.0,59.0 131.3,66.0 190.5,64.7 249.8,67.9 309.1,65.6 368.4,49.3 427.6,59.2 486.9,58.3 546.2,66.4 605.5,57.6 664.7,56.7 724.0,55.0 724.0,134.6 664.7,133.3 605.5,134.0 546.2,137.4 486.9,132.7 427.6,133.7 368.4,132.4 309.1,131.8 249.8,135.3 190.5,136.5 131.3,136.0 72.0,134.2"/><rect class="ac-me-neg" x="66.5" y="162.0" width="11" height="5.2" rx="2"><title>Edad 1 · sesgo -0,9% (subestima)</title></rect><rect class="ac-me-neg" x="125.8" y="162.0" width="11" height="6.7" rx="2"><title>Edad 2 · sesgo -1,2% (subestima)</title></rect><rect class="ac-me-neg" x="185.0" y="162.0" width="11" height="9.9" rx="2"><title>Edad 3 · sesgo -1,8% (subestima)</title></rect><rect class="ac-me-neg" x="244.3" y="162.0" width="11" height="9.2" rx="2"><title>Edad 4 · sesgo -1,6% (subestima)</title></rect><rect class="ac-me-neg" x="303.6" y="162.0" width="11" height="14.8" rx="2"><title>Edad 5 · sesgo -2,6% (subestima)</title></rect><rect class="ac-me-neg" x="362.9" y="162.0" width="11" height="14.4" rx="2"><title>Edad 6 · sesgo -2,6% (subestima)</title></rect><rect class="ac-me-neg" x="422.1" y="162.0" width="11" height="14.3" rx="2"><title>Edad 7 · sesgo -2,6% (subestima)</title></rect><rect class="ac-me-neg" x="481.4" y="162.0" width="11" height="14.9" rx="2"><title>Edad 8 · sesgo -2,7% (subestima)</title></rect><rect class="ac-me-pos" x="540.7" y="161.6" width="11" height="0.4" rx="2"><title>Edad 9 · sesgo 0,1% (sobreestima)</title></rect><rect class="ac-me-neg" x="600.0" y="162.0" width="11" height="19.1" rx="2"><title>Edad 10 · sesgo -3,4% (subestima)</title></rect><rect class="ac-me-neg" x="659.2" y="162.0" width="11" height="28.5" rx="2"><title>Edad 11 · sesgo -5,1% (subestima)</title></rect><rect class="ac-me-neg" x="718.5" y="162.0" width="11" height="12.1" rx="2"><title>Edad 12 · sesgo -2,2% (subestima)</title></rect><polyline class="ac-mae-line" points="72.0,85.9 131.3,93.3 190.5,91.0 249.8,92.2 309.1,91.4 368.4,85.3 427.6,89.6 486.9,88.1 546.2,92.6 605.5,88.2 664.7,87.6 724.0,87.9"/><circle class="ac-mae-dot" cx="72.0" cy="85.9" r="3.5"><title>Edad 1 · MAE 13,6%</title></circle><text class="ac-dlabel" x="72.0" y="76.9" text-anchor="middle">13,6</text><circle class="ac-mae-dot" cx="131.3" cy="93.3" r="3.5"><title>Edad 2 · MAE 12,3%</title></circle><text class="ac-dlabel" x="131.3" y="84.3" text-anchor="middle">12,3</text><circle class="ac-mae-dot" cx="190.5" cy="91.0" r="3.5"><title>Edad 3 · MAE 12,7%</title></circle><text class="ac-dlabel" x="190.5" y="82.0" text-anchor="middle">12,7</text><circle class="ac-mae-dot" cx="249.8" cy="92.2" r="3.5"><title>Edad 4 · MAE 12,5%</title></circle><text class="ac-dlabel" x="249.8" y="83.2" text-anchor="middle">12,5</text><circle class="ac-mae-dot" cx="309.1" cy="91.4" r="3.5"><title>Edad 5 · MAE 12,6%</title></circle><text class="ac-dlabel" x="309.1" y="82.4" text-anchor="middle">12,6</text><circle class="ac-mae-dot" cx="368.4" cy="85.3" r="3.5"><title>Edad 6 · MAE 13,7%</title></circle><text class="ac-dlabel" x="368.4" y="76.3" text-anchor="middle">13,7</text><circle class="ac-mae-dot" cx="427.6" cy="89.6" r="3.5"><title>Edad 7 · MAE 12,9%</title></circle><text class="ac-dlabel" x="427.6" y="80.6" text-anchor="middle">12,9</text><circle class="ac-mae-dot" cx="486.9" cy="88.1" r="3.5"><title>Edad 8 · MAE 13,2%</title></circle><text class="ac-dlabel" x="486.9" y="79.1" text-anchor="middle">13,2</text><circle class="ac-mae-dot" cx="546.2" cy="92.6" r="3.5"><title>Edad 9 · MAE 12,4%</title></circle><text class="ac-dlabel" x="546.2" y="83.6" text-anchor="middle">12,4</text><circle class="ac-mae-dot" cx="605.5" cy="88.2" r="3.5"><title>Edad 10 · MAE 13,2%</title></circle><text class="ac-dlabel" x="605.5" y="79.2" text-anchor="middle">13,2</text><circle class="ac-mae-dot" cx="664.7" cy="87.6" r="3.5"><title>Edad 11 · MAE 13,3%</title></circle><text class="ac-dlabel" x="664.7" y="78.6" text-anchor="middle">13,3</text><circle class="ac-mae-dot" cx="724.0" cy="87.9" r="3.5"><title>Edad 12 · MAE 13,2%</title></circle><text class="ac-dlabel" x="724.0" y="78.9" text-anchor="middle">13,2</text><text class="ac-axis-title" x="14" y="120.0" text-anchor="middle" transform="rotate(-90 14 120.0)">Error por lote (%)</text><line class="ac-grid" x1="52" y1="330" x2="744" y2="330"/><text class="ac-axis-title" x="14" y="307.0" text-anchor="middle" transform="rotate(-90 14 307.0)">Hectáreas (% del total)</text><rect class="ac-vol" x="64.0" y="284.0" width="16" height="46.0" rx="2"><title>Edad 1 · 24.442 ha (100,0%)</title></rect><text class="ac-xtick" x="72.0" y="344" text-anchor="middle">1</text><text class="ac-vol-lbl" x="72.0" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="72.0" y="367" text-anchor="middle">100,0%</text><rect class="ac-vol" x="123.3" y="284.0" width="16" height="46.0" rx="2"><title>Edad 2 · 24.442 ha (100,0%)</title></rect><text class="ac-xtick" x="131.3" y="344" text-anchor="middle">2</text><text class="ac-vol-lbl" x="131.3" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="131.3" y="367" text-anchor="middle">100,0%</text><rect class="ac-vol" x="182.5" y="284.0" width="16" height="46.0" rx="2"><title>Edad 3 · 24.442 ha (100,0%)</title></rect><text class="ac-xtick" x="190.5" y="344" text-anchor="middle">3</text><text class="ac-vol-lbl" x="190.5" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="190.5" y="367" text-anchor="middle">100,0%</text><rect class="ac-vol" x="241.8" y="284.0" width="16" height="46.0" rx="2"><title>Edad 4 · 24.442 ha (100,0%)</title></rect><text class="ac-xtick" x="249.8" y="344" text-anchor="middle">4</text><text class="ac-vol-lbl" x="249.8" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="249.8" y="367" text-anchor="middle">100,0%</text><rect class="ac-vol" x="301.1" y="284.0" width="16" height="46.0" rx="2"><title>Edad 5 · 24.442 ha (100,0%)</title></rect><text class="ac-xtick" x="309.1" y="344" text-anchor="middle">5</text><text class="ac-vol-lbl" x="309.1" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="309.1" y="367" text-anchor="middle">100,0%</text><rect class="ac-vol" x="360.4" y="284.0" width="16" height="46.0" rx="2"><title>Edad 6 · 24.442 ha (100,0%)</title></rect><text class="ac-xtick" x="368.4" y="344" text-anchor="middle">6</text><text class="ac-vol-lbl" x="368.4" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="368.4" y="367" text-anchor="middle">100,0%</text><rect class="ac-vol" x="419.6" y="284.4" width="16" height="45.6" rx="2"><title>Edad 7 · 24.255 ha (99,2%)</title></rect><text class="ac-xtick" x="427.6" y="344" text-anchor="middle">7</text><text class="ac-vol-lbl" x="427.6" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="427.6" y="367" text-anchor="middle">99,2%</text><rect class="ac-vol" x="478.9" y="284.5" width="16" height="45.5" rx="2"><title>Edad 8 · 24.202 ha (99,0%)</title></rect><text class="ac-xtick" x="486.9" y="344" text-anchor="middle">8</text><text class="ac-vol-lbl" x="486.9" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="486.9" y="367" text-anchor="middle">99,0%</text><rect class="ac-vol" x="538.2" y="284.7" width="16" height="45.3" rx="2"><title>Edad 9 · 24.067 ha (98,5%)</title></rect><text class="ac-xtick" x="546.2" y="344" text-anchor="middle">9</text><text class="ac-vol-lbl" x="546.2" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="546.2" y="367" text-anchor="middle">98,5%</text><rect class="ac-vol" x="597.5" y="285.5" width="16" height="44.5" rx="2"><title>Edad 10 · 23.648 ha (96,7%)</title></rect><text class="ac-xtick" x="605.5" y="344" text-anchor="middle">10</text><text class="ac-vol-lbl" x="605.5" y="357" text-anchor="middle">24k</text><text class="ac-vol-pct" x="605.5" y="367" text-anchor="middle">96,7%</text><rect class="ac-vol" x="656.7" y="290.9" width="16" height="39.1" rx="2"><title>Edad 11 · 20.769 ha (85,0%)</title></rect><text class="ac-xtick" x="664.7" y="344" text-anchor="middle">11</text><text class="ac-vol-lbl" x="664.7" y="357" text-anchor="middle">21k</text><text class="ac-vol-pct" x="664.7" y="367" text-anchor="middle">85,0%</text><rect class="ac-vol" x="716.0" y="312.3" width="16" height="17.7" rx="2"><title>Edad 12 · 9.386 ha (38,4%)</title></rect><text class="ac-xtick" x="724.0" y="344" text-anchor="middle">12</text><text class="ac-vol-lbl" x="724.0" y="357" text-anchor="middle">9k</text><text class="ac-vol-pct" x="724.0" y="367" text-anchor="middle">38,4%</text><text class="ac-axis-title" x="398.0" y="382" text-anchor="middle">Edad del cultivo (meses)</text></svg><div class="ac-legend"><span><i class="ac-sw ac-sw-mae"></i>Error medio por lote (MAE)</span><span><i class="ac-sw ac-sw-band"></i>Rango típico P25–P75</span><span><i class="ac-sw ac-sw-pos"></i>Sesgo + (sobreestima)</span><span><i class="ac-sw ac-sw-neg"></i>Sesgo − (subestima)</span><span><i class="ac-sw ac-sw-vol"></i>Hectáreas · % = cobertura sobre el total</span></div></div>
+</section>
+<section id="section-6" class="subsection">
+<h3><span class="sec-num">2.3</span>Comparativa de TCH por mes de cosecha</h3>
+<p>La gráfica compara, mes a mes, el <strong>TCH</strong> estimado por el <strong>modelo</strong> con el <strong>TCH</strong> real <strong>cosechado</strong>, usando la media ponderada por hectáreas de cada mes. La franja inferior muestra las hectáreas cosechadas en cada mes y su peso sobre el total.</p><div class="age-chart-wrap"><svg viewBox="0 0 760 358" class="age-chart" role="img" aria-label="TCH modelo vs cosechado por mes de cosecha"><line class="ac-grid" x1="52" y1="218.0" x2="744" y2="218.0"/><text class="ac-ytick" x="44" y="221.0" text-anchor="end">100</text><line class="ac-grid" x1="52" y1="178.8" x2="744" y2="178.8"/><text class="ac-ytick" x="44" y="181.8" text-anchor="end">110</text><line class="ac-grid" x1="52" y1="139.6" x2="744" y2="139.6"/><text class="ac-ytick" x="44" y="142.6" text-anchor="end">120</text><line class="ac-grid" x1="52" y1="100.4" x2="744" y2="100.4"/><text class="ac-ytick" x="44" y="103.4" text-anchor="end">130</text><line class="ac-grid" x1="52" y1="61.2" x2="744" y2="61.2"/><text class="ac-ytick" x="44" y="64.2" text-anchor="end">140</text><line class="ac-grid" x1="52" y1="22.0" x2="744" y2="22.0"/><text class="ac-ytick" x="44" y="25.0" text-anchor="end">150</text><polyline class="ac-real-line" points="90.0,110.1 192.7,76.8 295.3,60.5 398.0,92.2 500.7,105.2 603.3,126.7 706.0,206.6"/><polyline class="ac-pred-line" points="90.0,99.5 192.7,130.1 295.3,98.3 398.0,109.7 500.7,128.5 603.3,152.0 706.0,190.8"/><circle class="ac-real-dot" cx="90.0" cy="110.1" r="3.5"><title>Nov · Cosechado 127,5 t/ha</title></circle><circle class="ac-pred-dot" cx="90.0" cy="99.5" r="3.5"><title>Nov · Modelo 130,2 t/ha</title></circle><text class="ac-pred-lbl" x="90.0" y="90.5" text-anchor="middle">130,2</text><text class="ac-real-lbl" x="90.0" y="125.1" text-anchor="middle">127,5</text><circle class="ac-real-dot" cx="192.7" cy="76.8" r="3.5"><title>Dic · Cosechado 136,0 t/ha</title></circle><circle class="ac-pred-dot" cx="192.7" cy="130.1" r="3.5"><title>Dic · Modelo 122,4 t/ha</title></circle><text class="ac-real-lbl" x="192.7" y="67.8" text-anchor="middle">136,0</text><text class="ac-pred-lbl" x="192.7" y="145.1" text-anchor="middle">122,4</text><circle class="ac-real-dot" cx="295.3" cy="60.5" r="3.5"><title>Ene · Cosechado 140,2 t/ha</title></circle><circle class="ac-pred-dot" cx="295.3" cy="98.3" r="3.5"><title>Ene · Modelo 130,5 t/ha</title></circle><text class="ac-real-lbl" x="295.3" y="51.5" text-anchor="middle">140,2</text><text class="ac-pred-lbl" x="295.3" y="113.3" text-anchor="middle">130,5</text><circle class="ac-real-dot" cx="398.0" cy="92.2" r="3.5"><title>Feb · Cosechado 132,1 t/ha</title></circle><circle class="ac-pred-dot" cx="398.0" cy="109.7" r="3.5"><title>Feb · Modelo 127,6 t/ha</title></circle><text class="ac-real-lbl" x="398.0" y="83.2" text-anchor="middle">132,1</text><text class="ac-pred-lbl" x="398.0" y="124.7" text-anchor="middle">127,6</text><circle class="ac-real-dot" cx="500.7" cy="105.2" r="3.5"><title>Mar · Cosechado 128,8 t/ha</title></circle><circle class="ac-pred-dot" cx="500.7" cy="128.5" r="3.5"><title>Mar · Modelo 122,8 t/ha</title></circle><text class="ac-real-lbl" x="500.7" y="96.2" text-anchor="middle">128,8</text><text class="ac-pred-lbl" x="500.7" y="143.5" text-anchor="middle">122,8</text><circle class="ac-real-dot" cx="603.3" cy="126.7" r="3.5"><title>Abr · Cosechado 123,3 t/ha</title></circle><circle class="ac-pred-dot" cx="603.3" cy="152.0" r="3.5"><title>Abr · Modelo 116,8 t/ha</title></circle><text class="ac-real-lbl" x="603.3" y="117.7" text-anchor="middle">123,3</text><text class="ac-pred-lbl" x="603.3" y="167.0" text-anchor="middle">116,8</text><circle class="ac-real-dot" cx="706.0" cy="206.6" r="3.5"><title>May · Cosechado 102,9 t/ha</title></circle><circle class="ac-pred-dot" cx="706.0" cy="190.8" r="3.5"><title>May · Modelo 106,9 t/ha</title></circle><text class="ac-pred-lbl" x="706.0" y="181.8" text-anchor="middle">106,9</text><text class="ac-real-lbl" x="706.0" y="221.6" text-anchor="middle">102,9</text><text class="ac-axis-title" x="14" y="120.0" text-anchor="middle" transform="rotate(-90 14 120.0)">TCH (t/ha)</text><line class="ac-grid" x1="52" y1="300" x2="744" y2="300"/><text class="ac-axis-title" x="14" y="279.0" text-anchor="middle" transform="rotate(-90 14 279.0)">Hectáreas (% del total)</text><rect class="ac-vol" x="82.0" y="284.3" width="16" height="15.7" rx="2"><title>Nov · 1.567 ha (6,4%)</title></rect><text class="ac-xtick" x="90.0" y="314" text-anchor="middle">Nov</text><text class="ac-vol-lbl" x="90.0" y="327" text-anchor="middle">2k</text><text class="ac-vol-pct" x="90.0" y="337" text-anchor="middle">6,4%</text><rect class="ac-vol" x="184.7" y="264.5" width="16" height="35.5" rx="2"><title>Dic · 3.552 ha (14,5%)</title></rect><text class="ac-xtick" x="192.7" y="314" text-anchor="middle">Dic</text><text class="ac-vol-lbl" x="192.7" y="327" text-anchor="middle">4k</text><text class="ac-vol-pct" x="192.7" y="337" text-anchor="middle">14,5%</text><rect class="ac-vol" x="287.3" y="268.7" width="16" height="31.3" rx="2"><title>Ene · 3.132 ha (12,8%)</title></rect><text class="ac-xtick" x="295.3" y="314" text-anchor="middle">Ene</text><text class="ac-vol-lbl" x="295.3" y="327" text-anchor="middle">3k</text><text class="ac-vol-pct" x="295.3" y="337" text-anchor="middle">12,8%</text><rect class="ac-vol" x="390.0" y="260.4" width="16" height="39.6" rx="2"><title>Feb · 3.963 ha (16,2%)</title></rect><text class="ac-xtick" x="398.0" y="314" text-anchor="middle">Feb</text><text class="ac-vol-lbl" x="398.0" y="327" text-anchor="middle">4k</text><text class="ac-vol-pct" x="398.0" y="337" text-anchor="middle">16,2%</text><rect class="ac-vol" x="492.7" y="258.0" width="16" height="42.0" rx="2"><title>Mar · 4.204 ha (17,2%)</title></rect><text class="ac-xtick" x="500.7" y="314" text-anchor="middle">Mar</text><text class="ac-vol-lbl" x="500.7" y="327" text-anchor="middle">4k</text><text class="ac-vol-pct" x="500.7" y="337" text-anchor="middle">17,2%</text><rect class="ac-vol" x="595.3" y="260.5" width="16" height="39.5" rx="2"><title>Abr · 3.949 ha (16,2%)</title></rect><text class="ac-xtick" x="603.3" y="314" text-anchor="middle">Abr</text><text class="ac-vol-lbl" x="603.3" y="327" text-anchor="middle">4k</text><text class="ac-vol-pct" x="603.3" y="337" text-anchor="middle">16,2%</text><rect class="ac-vol" x="698.0" y="259.3" width="16" height="40.7" rx="2"><title>May · 4.075 ha (16,7%)</title></rect><text class="ac-xtick" x="706.0" y="314" text-anchor="middle">May</text><text class="ac-vol-lbl" x="706.0" y="327" text-anchor="middle">4k</text><text class="ac-vol-pct" x="706.0" y="337" text-anchor="middle">16,7%</text><text class="ac-axis-title" x="398.0" y="352" text-anchor="middle">Mes de cosecha</text></svg><div class="ac-legend"><span><i class="ac-sw ac-sw-pred"></i>TCH Modelo</span><span><i class="ac-sw ac-sw-real"></i>TCH Cosechado</span><span><i class="ac-sw ac-sw-vol"></i>Hectáreas · % = cobertura sobre el total</span></div></div>
+</section>
+<section id="section-7" class="subsection">
+<h3><span class="sec-num">2.4</span>Distribución del área por rango de error</h3>
+<p>La gráfica y la tabla reparten las hectáreas cosechadas según el error del modelo lote a lote. El error es la diferencia porcentual entre el TCH estimado por el modelo y el TCH real cosechado; para cada rango de error se muestra cuánta área cae en él (hectáreas y % del total).</p><div class="table-scroll"><table class="ed-table"><thead><tr><th>Rango de error</th><th>0-5%</th><th>5-10%</th><th>10-15%</th><th>15-20%</th><th>20-25%</th><th>25-30%</th><th>30-35%</th><th>35-40%</th><th>40-45%</th><th>45-50%</th><th>>50%</th><th>Total</th></tr></thead><tbody><tr><td>Área (ha)</td><td>7.299</td><td>5.841</td><td>4.337</td><td>3.226</td><td>1.707</td><td>869</td><td>510</td><td>271</td><td>119</td><td>53</td><td>212</td><td>24.442</td></tr><tr><td>% de área</td><td>29,9</td><td>23,9</td><td>17,7</td><td>13,2</td><td>7,0</td><td>3,6</td><td>2,1</td><td>1,1</td><td>0,5</td><td>0,2</td><td>0,9</td><td>100,0</td></tr></tbody></table></div><div class="ed-chart"><div class="age-chart-wrap"><svg viewBox="0 0 760 318" class="age-chart" role="img" aria-label="Distribución del área por rango de error"><line class="ac-grid" x1="52" y1="218.0" x2="744" y2="218.0"/><text class="ac-ytick" x="44" y="221.0" text-anchor="end">0</text><line class="ac-grid" x1="52" y1="185.3" x2="744" y2="185.3"/><text class="ac-ytick" x="44" y="188.3" text-anchor="end">5</text><line class="ac-grid" x1="52" y1="152.7" x2="744" y2="152.7"/><text class="ac-ytick" x="44" y="155.7" text-anchor="end">10</text><line class="ac-grid" x1="52" y1="120.0" x2="744" y2="120.0"/><text class="ac-ytick" x="44" y="123.0" text-anchor="end">15</text><line class="ac-grid" x1="52" y1="87.3" x2="744" y2="87.3"/><text class="ac-ytick" x="44" y="90.3" text-anchor="end">20</text><line class="ac-grid" x1="52" y1="54.7" x2="744" y2="54.7"/><text class="ac-ytick" x="44" y="57.7" text-anchor="end">25</text><line class="ac-grid" x1="52" y1="22.0" x2="744" y2="22.0"/><text class="ac-ytick" x="44" y="25.0" text-anchor="end">30</text><rect style="fill:rgb(59, 91, 219)" x="75.5" y="22.9" width="34.0" height="195.1" rx="3"><title>0-5% · 29,9% del área · 7.299 ha · 1204 lotes</title></rect><text class="ac-dlabel" x="92.5" y="16.9" text-anchor="middle">29,9</text><text class="ac-xtick" x="92.5" y="232" text-anchor="end" transform="rotate(-38 92.5 232)">0-5%</text><rect style="fill:rgb(92, 118, 225)" x="136.6" y="61.9" width="34.0" height="156.1" rx="3"><title>5-10% · 23,9% del área · 5.841 ha · 1058 lotes</title></rect><text class="ac-dlabel" x="153.6" y="55.9" text-anchor="middle">23,9</text><text class="ac-xtick" x="153.6" y="232" text-anchor="end" transform="rotate(-38 153.6 232)">5-10%</text><rect style="fill:rgb(126, 147, 232)" x="197.7" y="102.1" width="34.0" height="115.9" rx="3"><title>10-15% · 17,7% del área · 4.337 ha · 878 lotes</title></rect><text class="ac-dlabel" x="214.7" y="96.1" text-anchor="middle">17,7</text><text class="ac-xtick" x="214.7" y="232" text-anchor="end" transform="rotate(-38 214.7 232)">10-15%</text><rect style="fill:rgb(151, 167, 236)" x="258.8" y="131.8" width="34.0" height="86.2" rx="3"><title>15-20% · 13,2% del área · 3.226 ha · 729 lotes</title></rect><text class="ac-dlabel" x="275.8" y="125.8" text-anchor="middle">13,2</text><text class="ac-xtick" x="275.8" y="232" text-anchor="end" transform="rotate(-38 275.8 232)">15-20%</text><rect style="fill:rgb(186, 196, 243)" x="319.9" y="172.4" width="34.0" height="45.6" rx="3"><title>20-25% · 7,0% del área · 1.707 ha · 473 lotes</title></rect><text class="ac-dlabel" x="336.9" y="166.4" text-anchor="middle">7,0</text><text class="ac-xtick" x="336.9" y="232" text-anchor="end" transform="rotate(-38 336.9 232)">20-25%</text><rect style="fill:rgb(205, 212, 247)" x="381.0" y="194.7" width="34.0" height="23.3" rx="3"><title>25-30% · 3,6% del área · 869 ha · 324 lotes</title></rect><text class="ac-dlabel" x="398.0" y="188.7" text-anchor="middle">3,6</text><text class="ac-xtick" x="398.0" y="232" text-anchor="end" transform="rotate(-38 398.0 232)">25-30%</text><rect style="fill:rgb(213, 218, 248)" x="442.1" y="204.4" width="34.0" height="13.6" rx="3"><title>30-35% · 2,1% del área · 510 ha · 156 lotes</title></rect><text class="ac-dlabel" x="459.1" y="198.4" text-anchor="middle">2,1</text><text class="ac-xtick" x="459.1" y="232" text-anchor="end" transform="rotate(-38 459.1 232)">30-35%</text><rect style="fill:rgb(218, 223, 249)" x="503.2" y="210.7" width="34.0" height="7.3" rx="3"><title>35-40% · 1,1% del área · 271 ha · 86 lotes</title></rect><text class="ac-dlabel" x="520.2" y="204.7" text-anchor="middle">1,1</text><text class="ac-xtick" x="520.2" y="232" text-anchor="end" transform="rotate(-38 520.2 232)">35-40%</text><rect style="fill:rgb(222, 226, 250)" x="564.3" y="214.8" width="34.0" height="3.2" rx="3"><title>40-45% · 0,5% del área · 119 ha · 38 lotes</title></rect><text class="ac-dlabel" x="581.3" y="208.8" text-anchor="middle">0,5</text><text class="ac-xtick" x="581.3" y="232" text-anchor="end" transform="rotate(-38 581.3 232)">40-45%</text><rect style="fill:rgb(223, 227, 250)" x="625.4" y="216.6" width="34.0" height="1.4" rx="3"><title>45-50% · 0,2% del área · 53 ha · 23 lotes</title></rect><text class="ac-dlabel" x="642.4" y="210.6" text-anchor="middle">0,2</text><text class="ac-xtick" x="642.4" y="232" text-anchor="end" transform="rotate(-38 642.4 232)">45-50%</text><rect style="fill:rgb(219, 224, 249)" x="686.5" y="212.3" width="34.0" height="5.7" rx="3"><title>>50% · 0,9% del área · 212 ha · 45 lotes</title></rect><text class="ac-dlabel" x="703.5" y="206.3" text-anchor="middle">0,9</text><text class="ac-xtick" x="703.5" y="232" text-anchor="end" transform="rotate(-38 703.5 232)">>50%</text><text class="ac-axis-title" x="14" y="120.0" text-anchor="middle" transform="rotate(-90 14 120.0)">% de área</text><text class="ac-axis-title" x="398.0" y="312" text-anchor="middle">Rango de error</text></svg></div></div>
+</section>
+<section id="section-8" class="subsection">
+<h3><span class="sec-num">2.5</span>Error del modelo en los lotes con fecha de cosecha bien estimada</h3>
+<p>Este análisis se centra en los lotes cosechados que tenían una fecha de cosecha estimada, y compara esa fecha con la real. La diferencia entre ambas es la <strong>desviación</strong>, en meses; un lote tiene la <strong>fecha bien estimada</strong> cuando esa desviación no supera ±1 mes. Las tarjetas y la tabla muestran cuánta área queda dentro de ese margen y cómo se reparte la desviación.</p><div class="tiles"><div class="tile tile-used"><div class="tile-label">Área con fecha bien estimada (±1 mes)</div><p class="tile-value">63,5 <span class="tile-unit">%</span></p><div class="tile-secondary">15.311 ha</div></div><div class="tile"><div class="tile-label">Fuera de margen</div><p class="tile-value">36,5 <span class="tile-unit">%</span></p><div class="tile-secondary">del área, &gt; ±1 mes</div></div></div><table><thead><tr><th>Desviación (meses)</th><th>Área (ha)</th><th>% de área</th></tr></thead><tbody><tr><td>-2</td><td>132</td><td>0,6</td></tr><tr><td>-1</td><td>601</td><td>2,5</td></tr><tr class="row-hl"><td>0</td><td>15.311</td><td>63,5</td></tr><tr><td>+1</td><td>2.571</td><td>10,7</td></tr><tr><td>+2</td><td>1.625</td><td>6,7</td></tr><tr><td>+3</td><td>2.226</td><td>9,2</td></tr><tr><td>+4</td><td>1.643</td><td>6,8</td></tr><tr class="total-row"><td>Total</td><td>24.109</td><td>100,0</td></tr></tbody></table><p>Sobre esos lotes con la fecha bien estimada se repite el análisis de error por rango de la sección anterior.</p><div class="table-scroll"><table class="ed-table"><thead><tr><th>Rango de error</th><th>0-5%</th><th>5-10%</th><th>10-15%</th><th>15-20%</th><th>20-25%</th><th>25-30%</th><th>30-35%</th><th>35-40%</th><th>40-45%</th><th>45-50%</th><th>>50%</th><th>Total</th></tr></thead><tbody><tr><td>Área (ha)</td><td>4.322</td><td>3.710</td><td>2.840</td><td>2.020</td><td>1.166</td><td>527</td><td>310</td><td>138</td><td>62</td><td>49</td><td>167</td><td>15.311</td></tr><tr><td>% de área</td><td>28,2</td><td>24,2</td><td>18,6</td><td>13,2</td><td>7,6</td><td>3,4</td><td>2,0</td><td>0,9</td><td>0,4</td><td>0,3</td><td>1,1</td><td>100,0</td></tr></tbody></table></div><div class="ed-chart"><div class="age-chart-wrap"><svg viewBox="0 0 760 318" class="age-chart" role="img" aria-label="Distribución del área por rango de error"><line class="ac-grid" x1="52" y1="218.0" x2="744" y2="218.0"/><text class="ac-ytick" x="44" y="221.0" text-anchor="end">0</text><line class="ac-grid" x1="52" y1="185.3" x2="744" y2="185.3"/><text class="ac-ytick" x="44" y="188.3" text-anchor="end">5</text><line class="ac-grid" x1="52" y1="152.7" x2="744" y2="152.7"/><text class="ac-ytick" x="44" y="155.7" text-anchor="end">10</text><line class="ac-grid" x1="52" y1="120.0" x2="744" y2="120.0"/><text class="ac-ytick" x="44" y="123.0" text-anchor="end">15</text><line class="ac-grid" x1="52" y1="87.3" x2="744" y2="87.3"/><text class="ac-ytick" x="44" y="90.3" text-anchor="end">20</text><line class="ac-grid" x1="52" y1="54.7" x2="744" y2="54.7"/><text class="ac-ytick" x="44" y="57.7" text-anchor="end">25</text><line class="ac-grid" x1="52" y1="22.0" x2="744" y2="22.0"/><text class="ac-ytick" x="44" y="25.0" text-anchor="end">30</text><rect style="fill:rgb(59, 91, 219)" x="75.5" y="33.6" width="34.0" height="184.4" rx="3"><title>0-5% · 28,2% del área · 4.322 ha · 804 lotes</title></rect><text class="ac-dlabel" x="92.5" y="27.6" text-anchor="middle">28,2</text><text class="ac-xtick" x="92.5" y="232" text-anchor="end" transform="rotate(-38 92.5 232)">0-5%</text><rect style="fill:rgb(83, 110, 223)" x="136.6" y="59.7" width="34.0" height="158.3" rx="3"><title>5-10% · 24,2% del área · 3.710 ha · 743 lotes</title></rect><text class="ac-dlabel" x="153.6" y="53.7" text-anchor="middle">24,2</text><text class="ac-xtick" x="153.6" y="232" text-anchor="end" transform="rotate(-38 153.6 232)">5-10%</text><rect style="fill:rgb(116, 138, 230)" x="197.7" y="96.8" width="34.0" height="121.2" rx="3"><title>10-15% · 18,6% del área · 2.840 ha · 633 lotes</title></rect><text class="ac-dlabel" x="214.7" y="90.8" text-anchor="middle">18,6</text><text class="ac-xtick" x="214.7" y="232" text-anchor="end" transform="rotate(-38 214.7 232)">10-15%</text><rect style="fill:rgb(147, 164, 236)" x="258.8" y="131.8" width="34.0" height="86.2" rx="3"><title>15-20% · 13,2% del área · 2.020 ha · 482 lotes</title></rect><text class="ac-dlabel" x="275.8" y="125.8" text-anchor="middle">13,2</text><text class="ac-xtick" x="275.8" y="232" text-anchor="end" transform="rotate(-38 275.8 232)">15-20%</text><rect style="fill:rgb(180, 191, 242)" x="319.9" y="168.2" width="34.0" height="49.8" rx="3"><title>20-25% · 7,6% del área · 1.166 ha · 326 lotes</title></rect><text class="ac-dlabel" x="336.9" y="162.2" text-anchor="middle">7,6</text><text class="ac-xtick" x="336.9" y="232" text-anchor="end" transform="rotate(-38 336.9 232)">20-25%</text><rect style="fill:rgb(205, 212, 247)" x="381.0" y="195.5" width="34.0" height="22.5" rx="3"><title>25-30% · 3,4% del área · 527 ha · 219 lotes</title></rect><text class="ac-dlabel" x="398.0" y="189.5" text-anchor="middle">3,4</text><text class="ac-xtick" x="398.0" y="232" text-anchor="end" transform="rotate(-38 398.0 232)">25-30%</text><rect style="fill:rgb(213, 219, 248)" x="442.1" y="204.8" width="34.0" height="13.2" rx="3"><title>30-35% · 2,0% del área · 310 ha · 108 lotes</title></rect><text class="ac-dlabel" x="459.1" y="198.8" text-anchor="middle">2,0</text><text class="ac-xtick" x="459.1" y="232" text-anchor="end" transform="rotate(-38 459.1 232)">30-35%</text><rect style="fill:rgb(220, 224, 249)" x="503.2" y="212.1" width="34.0" height="5.9" rx="3"><title>35-40% · 0,9% del área · 138 ha · 53 lotes</title></rect><text class="ac-dlabel" x="520.2" y="206.1" text-anchor="middle">0,9</text><text class="ac-xtick" x="520.2" y="232" text-anchor="end" transform="rotate(-38 520.2 232)">35-40%</text><rect style="fill:rgb(223, 227, 250)" x="564.3" y="215.4" width="34.0" height="2.6" rx="3"><title>40-45% · 0,4% del área · 62 ha · 25 lotes</title></rect><text class="ac-dlabel" x="581.3" y="209.4" text-anchor="middle">0,4</text><text class="ac-xtick" x="581.3" y="232" text-anchor="end" transform="rotate(-38 581.3 232)">40-45%</text><rect style="fill:rgb(223, 227, 250)" x="625.4" y="215.9" width="34.0" height="2.1" rx="3"><title>45-50% · 0,3% del área · 49 ha · 21 lotes</title></rect><text class="ac-dlabel" x="642.4" y="209.9" text-anchor="middle">0,3</text><text class="ac-xtick" x="642.4" y="232" text-anchor="end" transform="rotate(-38 642.4 232)">45-50%</text><rect style="fill:rgb(218, 223, 249)" x="686.5" y="210.9" width="34.0" height="7.1" rx="3"><title>>50% · 1,1% del área · 167 ha · 32 lotes</title></rect><text class="ac-dlabel" x="703.5" y="204.9" text-anchor="middle">1,1</text><text class="ac-xtick" x="703.5" y="232" text-anchor="end" transform="rotate(-38 703.5 232)">>50%</text><text class="ac-axis-title" x="14" y="120.0" text-anchor="middle" transform="rotate(-90 14 120.0)">% de área</text><text class="ac-axis-title" x="398.0" y="312" text-anchor="middle">Rango de error</text></svg></div></div>
+</section>
+</body></html>
